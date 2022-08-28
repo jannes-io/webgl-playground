@@ -4,10 +4,11 @@ import vsSource from './shaders/vertex.vert';
 import fsSource from './shaders/fragment.frag';
 import bottleTex from './bottle.png';
 import bottleObj from './bottle.obj';
+import cubeObj from './cube.obj';
 import { parse } from './objParser';
 
-parse(bottleObj);
-
+const modelData = parse(bottleObj);
+console.log(modelData);
 let squareRotation = 0.0;
 
 const loadShader = (
@@ -48,116 +49,21 @@ const initShaderProgram = (gl: WebGLRenderingContext) => {
 };
 
 const initBuffers = (gl: WebGLRenderingContext) => {
-  const positions = [
-    // Front face
-    -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0, 1.0,
-    // Back face
-    -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0, -1.0,
-    // Top face
-    -1.0, 1.0, -1.0, -1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, -1.0,
-    // Bottom face
-    -1.0, -1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, -1.0, -1.0, 1.0,
-    // Right face
-    1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0, -1.0, 1.0,
-    // Left face
-    -1.0, -1.0, -1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, -1.0,
-  ];
-
   const positionBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
-  const textureCoordinates = [
-    // Front
-    0.0, 0.0,
-    1.0, 0.0,
-    1.0, 1.0,
-    0.0, 1.0,
-    // Back
-    0.0, 0.0,
-    1.0, 0.0,
-    1.0, 1.0,
-    0.0, 1.0,
-    // Top
-    0.0, 0.0,
-    1.0, 0.0,
-    1.0, 1.0,
-    0.0, 1.0,
-    // Bottom
-    0.0, 0.0,
-    1.0, 0.0,
-    1.0, 1.0,
-    0.0, 1.0,
-    // Right
-    0.0, 0.0,
-    1.0, 0.0,
-    1.0, 1.0,
-    0.0, 1.0,
-    // Left
-    0.0, 0.0,
-    1.0, 0.0,
-    1.0, 1.0,
-    0.0, 1.0,
-  ];
-
-  const textureCoordBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gl.STATIC_DRAW);
-
-  const indices = [
-    0, 1, 2, 0, 2, 3,    // front
-    4, 5, 6, 4, 6, 7,    // back
-    8, 9, 10, 8, 10, 11,   // top
-    12, 13, 14, 12, 14, 15,   // bottom
-    16, 17, 18, 16, 18, 19,   // right
-    20, 21, 22, 20, 22, 23,   // left
-  ];
-
-  const indexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-
-  const vertexNormals = [
-    // Front
-    0.0,  0.0,  1.0,
-    0.0,  0.0,  1.0,
-    0.0,  0.0,  1.0,
-    0.0,  0.0,  1.0,
-
-    // Back
-    0.0,  0.0, -1.0,
-    0.0,  0.0, -1.0,
-    0.0,  0.0, -1.0,
-    0.0,  0.0, -1.0,
-
-    // Top
-    0.0,  1.0,  0.0,
-    0.0,  1.0,  0.0,
-    0.0,  1.0,  0.0,
-    0.0,  1.0,  0.0,
-
-    // Bottom
-    0.0, -1.0,  0.0,
-    0.0, -1.0,  0.0,
-    0.0, -1.0,  0.0,
-    0.0, -1.0,  0.0,
-
-    // Right
-    1.0,  0.0,  0.0,
-    1.0,  0.0,  0.0,
-    1.0,  0.0,  0.0,
-    1.0,  0.0,  0.0,
-
-    // Left
-    -1.0,  0.0,  0.0,
-    -1.0,  0.0,  0.0,
-    -1.0,  0.0,  0.0,
-    -1.0,  0.0,  0.0
-  ];
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(modelData.vertices), gl.STATIC_DRAW);
 
   const normalBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(modelData.normals), gl.STATIC_DRAW);
+
+  const textureCoordBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(modelData.textureCoordinates), gl.STATIC_DRAW);
+
+  const indexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(modelData.indices), gl.STATIC_DRAW);
 
   return {
     position: positionBuffer,
@@ -214,13 +120,13 @@ const drawScene = (
   const fieldOfView = 45 * Math.PI / 180;
   const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
   const projectMatrix = mat4.create();
-  mat4.perspective(projectMatrix, fieldOfView, aspect, 0.1, 100.0);
+  mat4.perspective(projectMatrix, fieldOfView, aspect, 0.1, 1000.0);
 
   const modelViewMatrix = mat4.create();
-  mat4.translate(modelViewMatrix, modelViewMatrix, [0.0, 0.0, -6.0]);
-  mat4.rotate(modelViewMatrix, modelViewMatrix, squareRotation, [0, 0, 1]);
-  mat4.rotate(modelViewMatrix, modelViewMatrix, squareRotation, [0, 1, 0]);
-  mat4.rotate(modelViewMatrix, modelViewMatrix, squareRotation, [1, 0, 0]);
+  mat4.translate(modelViewMatrix, modelViewMatrix, [60, -30, -100.0]);
+  // mat4.rotate(modelViewMatrix, modelViewMatrix, squareRotation, [0, 0, 1]);
+  // mat4.rotate(modelViewMatrix, modelViewMatrix, squareRotation, [0, 1, 0]);
+  // mat4.rotate(modelViewMatrix, modelViewMatrix, squareRotation, [1, 0, 0]);
 
   const normalMatrix = mat4.create();
   mat4.invert(normalMatrix, modelViewMatrix);
@@ -251,7 +157,7 @@ const drawScene = (
   gl.bindBuffer(gl.ARRAY_BUFFER, buffers.texture);
   gl.vertexAttribPointer(
     programInfo.attribLocations.textureCoord,
-    2,
+    3,
     gl.FLOAT,
     false,
     0,
@@ -271,7 +177,7 @@ const drawScene = (
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
-  const vertexCount = 36;
+  const vertexCount = modelData.indices.length;
   gl.drawElements(gl.TRIANGLES, vertexCount, gl.UNSIGNED_SHORT, 0);
 
   squareRotation += deltaTime;
