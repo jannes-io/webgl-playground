@@ -1,5 +1,7 @@
 import { GLObject } from './objParser';
 
+export const textureAtlas: WebGLTexture[] = [];
+
 export const loadShader = (
   gl: WebGLRenderingContext,
   type: GLenum,
@@ -48,12 +50,10 @@ export const bindArrayBuffer = (gl: WebGLRenderingContext, buffer: WebGLBuffer, 
 
 export const bindTexture = (
   gl: WebGLRenderingContext,
-  texture: WebGLTexture,
-  textureId: GLenum,
+  texture: number,
   sampler: WebGLUniformLocation,
 ) => {
-  gl.activeTexture(textureId);
-  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.bindTexture(gl.TEXTURE_2D, textureAtlas[texture]);
   gl.uniform1i(sampler, 0);
 };
 
@@ -102,5 +102,6 @@ export const loadTexture = (gl: WebGLRenderingContext, url: string) => {
   };
   image.src = url;
 
-  return texture;
+  textureAtlas.push(texture);
+  return textureAtlas.length - 1;
 };
