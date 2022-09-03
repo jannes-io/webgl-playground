@@ -14,6 +14,7 @@ export interface Camera {
 
 export interface Scene {
   objects: SceneObject[];
+  lights?: vec3[];
   camera?: Camera;
   animate?: (dt: number) => void;
 }

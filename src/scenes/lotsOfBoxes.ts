@@ -11,7 +11,7 @@ const loadScene: SceneLoader = (gl) => {
   const modelMatrix = mat4.create();
 
   const boxes = [];
-  const count = 5;
+  const count = 3;
   for (let i = 0; i < count; i++) {
     for (let j = 0; j < count; j++) {
       for (let k = 0; k < count; k++) {
@@ -47,6 +47,7 @@ const loadScene: SceneLoader = (gl) => {
   return {
     objects: boxes,
     camera,
+    lights: [vec3.fromValues(3, 3, 2)],
   };
 };
 

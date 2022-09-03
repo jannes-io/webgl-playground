@@ -1,7 +1,9 @@
 import './global.css';
 import { mat4, glMatrix, vec3 } from 'gl-matrix';
-import vsSource from './shaders/vertex.vert';
-import fsSource from './shaders/fragment.frag';
+import objectVertexShader from './shaders/object.vert';
+import objectFragmentShader from './shaders/object.frag';
+import lightVertexShader from './shaders/light.vert';
+import lightFragmentShader from './shaders/light.frag';
 import {
   bindArrayBuffer,
   bindTexture,
@@ -9,6 +11,7 @@ import {
 } from './gl';
 import { Scene } from './scenes/scene';
 import { loadBoxAndBottle, loadLotsOfBoxes } from './scenes';
+import box from './box';
 
 interface IProgramInfo {
   program: WebGLProgram;
@@ -19,7 +22,8 @@ interface IProgramInfo {
 const drawScene = (
   gl: WebGLRenderingContext,
   scene: Scene,
-  programInfo: IProgramInfo,
+  objectShader: IProgramInfo,
+  lightShader: IProgramInfo,
 ) => {
   gl.clearColor(0.0, 0.0, 0.0, 1.0);
   gl.clearDepth(1.0);
@@ -36,49 +40,99 @@ const drawScene = (
   const projectMatrix = mat4.create();
   mat4.perspective(projectMatrix, glMatrix.toRadian(45), aspect, 0.1, 1000.0);
 
-  gl.useProgram(programInfo.program);
+  // Object shader
+  {
+    gl.useProgram(objectShader.program);
 
-  gl.uniformMatrix4fv(programInfo.uniformLocations.viewMatrix, false, viewMatrix);
-  gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectMatrix);
+    gl.uniformMatrix4fv(objectShader.uniformLocations.viewMatrix, false, viewMatrix);
+    gl.uniformMatrix4fv(objectShader.uniformLocations.projectionMatrix, false, projectMatrix);
+    gl.uniform3fv(objectShader.uniformLocations.lightColor, new Float32Array([1.0, 1.0, 1.0]));
+    gl.uniform3fv(objectShader.uniformLocations.lightPos, scene.lights[0]);
+    gl.uniform3fv(objectShader.uniformLocations.viewPos, scene.camera.position);
 
-  scene.objects.forEach(({ objectBuffers, texture, transform }) => {
-    bindArrayBuffer(gl, objectBuffers.position, programInfo.attribLocations.vertexPosition);
-    bindArrayBuffer(gl, objectBuffers.texture, programInfo.attribLocations.textureCoord);
+    scene.objects.forEach(({ objectBuffers, texture, transform }) => {
+      gl.uniformMatrix4fv(objectShader.uniformLocations.modelMatrix, false, transform);
 
-    gl.uniformMatrix4fv(programInfo.uniformLocations.modelMatrix, false, transform);
+      bindArrayBuffer(gl, objectBuffers.position, objectShader.attribLocations.vertexPosition);
+      bindArrayBuffer(gl, objectBuffers.normal, objectShader.attribLocations.vertexNormal);
+      bindArrayBuffer(gl, objectBuffers.texture, objectShader.attribLocations.textureCoord);
 
-    bindTexture(gl, texture, programInfo.uniformLocations.uSampler);
-    gl.drawArrays(gl.TRIANGLES, 0, objectBuffers.vertexCount);
-  });
+      bindTexture(gl, texture, objectShader.uniformLocations.sampler);
+      gl.drawArrays(gl.TRIANGLES, 0, objectBuffers.vertexCount);
+    });
+  }
+
+  // Light shader
+  if (scene.lights !== undefined) {
+    gl.useProgram(lightShader.program);
+
+    gl.uniformMatrix4fv(lightShader.uniformLocations.viewMatrix, false, viewMatrix);
+    gl.uniformMatrix4fv(lightShader.uniformLocations.projectionMatrix, false, projectMatrix);
+
+    scene.lights.forEach((location) => {
+      const modelMatrix = mat4.create();
+      mat4.translate(modelMatrix, modelMatrix, location);
+      mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(0.2, 0.2, 0.2));
+
+      gl.uniformMatrix4fv(lightShader.uniformLocations.modelMatrix, false, modelMatrix);
+
+      const positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(box), gl.STATIC_DRAW);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 32);
+    });
+  }
 };
 
 const main = () => {
+  // Init canvas
   const canvas = document.createElement('canvas');
-  document.body.append(canvas);
-
   canvas.width = parseInt(window.getComputedStyle(document.body).width, 10);
   canvas.height = canvas.width / 16 * 9;
-  const gl = canvas.getContext('webgl2');
+
+  document.body.append(canvas);
+
+  // Init GL
+  const gl = canvas.getContext('webgl');
 
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
 
-  const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
-
-  const programInfo: IProgramInfo = {
-    program: shaderProgram,
+  // Init shader programs
+  const objectShader = initShaderProgram(gl, objectVertexShader, objectFragmentShader);
+  const objectShaderInfo: IProgramInfo = {
+    program: objectShader,
     attribLocations: {
-      vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
-      textureCoord: gl.getAttribLocation(shaderProgram, 'aTextureCoord'),
+      vertexPosition: gl.getAttribLocation(objectShader, 'aVertexPosition'),
+      vertexNormal: gl.getAttribLocation(objectShader, 'aVertexNormal'),
+      textureCoord: gl.getAttribLocation(objectShader, 'aTextureCoord'),
     },
     uniformLocations: {
-      modelMatrix: gl.getUniformLocation(shaderProgram, 'uModelMatrix'),
-      viewMatrix: gl.getUniformLocation(shaderProgram, 'uViewMatrix'),
-      projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-      uSampler: gl.getUniformLocation(shaderProgram, 'uSampler'),
+      modelMatrix: gl.getUniformLocation(objectShader, 'uModelMatrix'),
+      viewMatrix: gl.getUniformLocation(objectShader, 'uViewMatrix'),
+      projectionMatrix: gl.getUniformLocation(objectShader, 'uProjectionMatrix'),
+      sampler: gl.getUniformLocation(objectShader, 'uSampler'),
+      lightColor: gl.getUniformLocation(objectShader, 'uLightColor'),
+      lightPos: gl.getUniformLocation(objectShader, 'uLightPos'),
+      viewPos: gl.getUniformLocation(objectShader, 'uViewPos'),
     },
   };
 
+  const lightShader = initShaderProgram(gl, lightVertexShader, lightFragmentShader);
+  const lightShaderInfo: IProgramInfo = {
+    program: lightShader,
+    attribLocations: {
+      vertexPosition: gl.getAttribLocation(lightShader, 'aVertexPosition'),
+    },
+    uniformLocations: {
+      modelMatrix: gl.getUniformLocation(lightShader, 'uModelMatrix'),
+      viewMatrix: gl.getUniformLocation(lightShader, 'uViewMatrix'),
+      projectionMatrix: gl.getUniformLocation(lightShader, 'uProjectionMatrix'),
+    },
+  };
+
+  // Render scene
   // const scene = loadBoxAndBottle(gl);
   const scene = loadLotsOfBoxes(gl);
 
@@ -87,7 +141,7 @@ const main = () => {
     const deltaTime = currFrame - prevFrame;
     prevFrame = currFrame;
 
-    drawScene(gl, scene, programInfo);
+    drawScene(gl, scene, objectShaderInfo, lightShaderInfo);
     if (scene.animate !== undefined) {
       scene.animate(deltaTime);
     }
