@@ -26,7 +26,7 @@ const drawScene = (
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  const cameraPosition = scene.camera?.position || vec3.fromValues(0, 0, -3);
+  const cameraPosition = scene.camera?.position || vec3.fromValues(0, 0, 10);
   const cameraTarget = scene.camera?.target || vec3.fromValues(0, 0, 0);
 
   const viewMatrix = mat4.create();
@@ -62,7 +62,6 @@ const main = () => {
 
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
-  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
   const shaderProgram = initShaderProgram(gl, vsSource, fsSource);
 

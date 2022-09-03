@@ -89,6 +89,7 @@ export const createSolidColorTexture = (
   gl.bindTexture(gl.TEXTURE_2D, texture);
 
   const color = new Uint8Array([r, g, b, a]);
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
   gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, color);
 
   textureAtlas.push(texture);
@@ -101,6 +102,8 @@ export const loadTexture = (gl: WebGLRenderingContext, url: string) => {
 
   const image = new Image();
   image.onload = () => {
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+
     gl.bindTexture(gl.TEXTURE_2D, texture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
