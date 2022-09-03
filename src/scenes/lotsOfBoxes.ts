@@ -1,25 +1,36 @@
 import { SceneLoader } from './scene';
 import { parse } from '../objParser';
 import boxObj from './assets/smollbox.obj';
-import boxTex from './assets/box.png';
-import { initObjectBuffers, loadTexture } from '../gl';
+import { createSolidColorTexture, initObjectBuffers } from '../gl';
 import { glMatrix, mat4, vec3 } from 'gl-matrix';
 
 const loadScene: SceneLoader = (gl) => {
   const parsedBox = parse(boxObj);
-  const boxTexture = loadTexture(gl, boxTex);
 
   const modelMatrix = mat4.create();
 
   const boxes = [];
-  for (let i = -1; i < 2; i++) {
-    for (let j = -1; j < 2; j++) {
-      for (let k = -1; k < 2; k++) {
-        const boxMatrix = mat4.translate(mat4.create(), modelMatrix, [i * 3, j * -3, k * 3]);
+  const count = 3;
+  for (let i = 0; i < count; i++) {
+    for (let j = 0; j < count; j++) {
+      for (let k = 0; k < count; k++) {
+        // boxes in all directions around 0, 0
+        const x = (i - 1) * count;
+        const y = (j - 1) * count;
+        const z = (k - 1) * count;
+
+        const boxMatrix = mat4.translate(mat4.create(), modelMatrix, [x, y, z]);
+
+        // funky colors
+        const r = 255 / (count - 1) * i;
+        const g = 255 / (count - 1) * j;
+        const b = 255 / (count - 1) * k;
+
+        const texture = createSolidColorTexture(gl, r, g, b);
 
         boxes.push({
           objectBuffers: initObjectBuffers(gl, parsedBox),
-          texture: boxTexture,
+          texture,
           transform: boxMatrix,
         });
       }

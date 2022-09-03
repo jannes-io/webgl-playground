@@ -81,27 +81,32 @@ export const initObjectBuffers = (gl: WebGLRenderingContext, obj: GLObject): GLO
   return { position, normal, texture, vertexCount };
 };
 
-export const loadTexture = (gl: WebGLRenderingContext, url: string) => {
+export const createSolidColorTexture = (
+  gl: WebGLRenderingContext,
+  r: number, g: number, b: number, a: number = 255,
+) => {
   const texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
 
-  const level = 0;
-  const internalFormat = gl.RGBA;
-  const srcFormat = gl.RGBA;
-  const srcType = gl.UNSIGNED_BYTE;
-  const pixel = new Uint8Array([0, 0, 255, 255]);
+  const color = new Uint8Array([r, g, b, a]);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, color);
 
-  gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, 1, 1, 0, srcFormat, srcType, pixel);
+  textureAtlas.push(texture);
+  return textureAtlas.length - 1;
+};
+
+export const loadTexture = (gl: WebGLRenderingContext, url: string) => {
+  const textureId = createSolidColorTexture(gl, 0, 255, 255);
+  const texture = textureAtlas[textureId];
 
   const image = new Image();
   image.onload = () => {
     gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
     gl.generateMipmap(gl.TEXTURE_2D);
   };
   image.src = url;
 
-  textureAtlas.push(texture);
-  return textureAtlas.length - 1;
+  return textureId;
 };
