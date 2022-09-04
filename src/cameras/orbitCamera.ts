@@ -19,10 +19,10 @@ export const orbitCamera = (
 
   const { cos, sin } = Math;
   const updateCamera = () => {
-    debugInfo.innerText = `ψ: ${(camPhi * 180 / Math.PI).toFixed(2)}deg, θ: ${(camTetha * 180 / Math.PI).toFixed(2)}deg r: ${r.toFixed(2)}`;
+    debugInfo.innerText = `φ: ${(camPhi * 180 / Math.PI).toFixed(2)}deg, θ: ${(camTetha * 180 / Math.PI).toFixed(2)}deg r: ${r.toFixed(2)}`;
     const camX = r * cos(camPhi) * sin(camTetha);
-    const camY = r * sin(camPhi) * sin(camTetha);
-    const camZ = r * cos(camTetha);
+    const camY = r * sin(camPhi);
+    const camZ = r * cos(camTetha) * cos(camPhi);
 
     vec3.add(camera.position, camera.target, [camX, camY, camZ]);
   };
@@ -32,14 +32,9 @@ export const orbitCamera = (
     if (mouseDown) {
       const speed = 0.005;
       camTetha = (camTetha - e.movementX * speed) % (Math.PI * 2);
+      camPhi = camPhi + e.movementY * speed;
 
-      if (camTetha > Math.PI) {
-        camPhi = (camPhi - e.movementY * speed) % (Math.PI * 2);
-      } else {
-        camPhi = (camPhi + e.movementY * speed) % (Math.PI * 2);
-      }
-
-      camPhi = camPhi < 0 ? Math.PI * 2 - camPhi : camPhi;
+      camPhi = Math.min(Math.max(camPhi, -3.14 / 2), 3.14 / 2);
       camTetha = camTetha < 0 ? Math.PI * 2 - camTetha : camTetha;
 
       updateCamera();
