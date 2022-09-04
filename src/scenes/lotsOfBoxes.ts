@@ -41,7 +41,7 @@ const loadScene: SceneLoader = (gl) => {
 
   const camera = orbitCamera(gl, {
     position: vec3.fromValues(0, 0, 0),
-    target: vec3.fromValues(0, 0, 0),
+    target: vec3.fromValues(-1, -0.75, -1.25),
   }, 20);
 
   return {

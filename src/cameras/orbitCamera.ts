@@ -8,8 +8,8 @@ export const orbitCamera = (
 ) => {
   let mouseDown = false;
   let r = initialRadius;
-  let camTheta = glMatrix.toRadian(90);
-  let camPsi = 0;
+  let camPhi = 0;
+  let camTetha = 0;
 
   const { canvas } = gl;
 
@@ -19,23 +19,28 @@ export const orbitCamera = (
 
   const { cos, sin } = Math;
   const updateCamera = () => {
-    debugInfo.innerText = `θ: ${(camTheta * 180 / Math.PI).toFixed(2)}deg, ψ: ${(camPsi * 180 / Math.PI).toFixed(2)}deg r: ${r.toFixed(2)}`;
-    const camX = r * cos(camPsi) * sin(camTheta);
-    const camY = r * sin(camPsi) * sin(camTheta);
-    const camZ = r * cos(camTheta);
+    debugInfo.innerText = `ψ: ${(camPhi * 180 / Math.PI).toFixed(2)}deg, θ: ${(camTetha * 180 / Math.PI).toFixed(2)}deg r: ${r.toFixed(2)}`;
+    const camX = r * cos(camPhi) * sin(camTetha);
+    const camY = r * sin(camPhi) * sin(camTetha);
+    const camZ = r * cos(camTetha);
 
-    camera.position = vec3.fromValues(camX, camY, camZ);
+    vec3.add(camera.position, camera.target, [camX, camY, camZ]);
   };
   updateCamera();
 
   window.addEventListener('mousemove', (e) => {
     if (mouseDown) {
       const speed = 0.005;
-      camTheta = (camTheta - e.movementX * speed) % (Math.PI * 2);
-      camPsi = (camPsi + e.movementY * speed) % (Math.PI * 2);
+      camTetha = (camTetha - e.movementX * speed) % (Math.PI * 2);
 
-      camTheta = camTheta < 0 ? Math.PI * 2 - camTheta : camTheta;
-      camPsi = camPsi < 0 ? Math.PI * 2 - camPsi : camPsi;
+      if (camTetha > Math.PI) {
+        camPhi = (camPhi - e.movementY * speed) % (Math.PI * 2);
+      } else {
+        camPhi = (camPhi + e.movementY * speed) % (Math.PI * 2);
+      }
+
+      camPhi = camPhi < 0 ? Math.PI * 2 - camPhi : camPhi;
+      camTetha = camTetha < 0 ? Math.PI * 2 - camTetha : camTetha;
 
       updateCamera();
     }
