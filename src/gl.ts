@@ -1,5 +1,7 @@
 import { GLObject } from './objParser';
 
+export type TextureID = number;
+
 export const textureAtlas: WebGLTexture[] = [];
 
 export const loadShader = (
@@ -42,19 +44,16 @@ export const initShaderProgram = (gl: WebGLRenderingContext, vecSrc: string, fra
   return shaderProgram;
 };
 
-export const bindArrayBuffer = (gl: WebGLRenderingContext, buffer: WebGLBuffer, dataPtr: number) => {
+export const bindArrayBuffer = (gl: WebGLRenderingContext, bindLocation: number, buffer: WebGLBuffer) => {
   gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-  gl.vertexAttribPointer(dataPtr, 3, gl.FLOAT, false, 0, 0);
-  gl.enableVertexAttribArray(dataPtr);
+  gl.vertexAttribPointer(bindLocation, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(bindLocation);
 };
 
-export const bindTexture = (
-  gl: WebGLRenderingContext,
-  texture: number,
-  sampler: WebGLUniformLocation,
-) => {
-  gl.bindTexture(gl.TEXTURE_2D, textureAtlas[texture]);
-  gl.uniform1i(sampler, 0);
+export const bindTexture = (gl: WebGLRenderingContext, bindLocation: WebGLUniformLocation, textureId: TextureID) => {
+  gl.activeTexture(gl.TEXTURE0 + textureId);
+  gl.bindTexture(gl.TEXTURE_2D, textureAtlas[textureId]);
+  gl.uniform1i(bindLocation, textureId);
 };
 
 export interface GLObjectBuffers {
@@ -96,20 +95,22 @@ export const createSolidColorTexture = (
   return textureAtlas.length - 1;
 };
 
-export const loadTexture = (gl: WebGLRenderingContext, url: string) => {
-  const textureId = createSolidColorTexture(gl, 0, 255, 255);
-  const texture = textureAtlas[textureId];
+export const loadTexture = (gl: WebGLRenderingContext, url: string): Promise<number> => {
+  const texture = gl.createTexture();
 
-  const image = new Image();
-  image.onload = () => {
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
 
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
-    gl.generateMipmap(gl.TEXTURE_2D);
-  };
-  image.src = url;
+      gl.generateMipmap(gl.TEXTURE_2D);
 
-  return textureId;
+      textureAtlas.push(texture);
+      resolve(textureAtlas.length - 1);
+    };
+    image.src = url;
+  });
 };

@@ -1,24 +1,31 @@
 import { parse } from '../objParser';
 import boxObj from './assets/box.obj';
-import boxTex from './assets/box.png';
 import { mat4 } from 'gl-matrix';
 import bottleObj from './assets/bottle.obj';
 import bottleTex from './assets/bottle.png';
-import { SceneLoader } from './scene';
-import { initObjectBuffers, loadTexture } from '../gl';
+import { SceneLoader, SceneObject } from './scene';
+import { createSolidColorTexture, initObjectBuffers, loadTexture } from '../gl';
 
-const loadScene: SceneLoader = (gl) => {
+const loadScene: SceneLoader = async (gl) => {
   const boxTranslate = new Float32Array([-30, -50, -200.0]);
-  const box = {
+  const box: SceneObject = {
     objectBuffers: initObjectBuffers(gl, parse(boxObj)),
-    texture: loadTexture(gl, boxTex),
+    material: {
+      diffuse: createSolidColorTexture(gl, 255, 0, 255),
+      specular: createSolidColorTexture(gl, 255, 255, 255),
+      shininess: 32,
+    },
     transform: mat4.translate(mat4.create(), mat4.create(), boxTranslate),
   };
 
   const bottleTranslate = new Float32Array([30, -35, -100.0]);
-  const bottle = {
+  const bottle: SceneObject = {
     objectBuffers: initObjectBuffers(gl, parse(bottleObj)),
-    texture: loadTexture(gl, bottleTex),
+    material: {
+      diffuse: await loadTexture(gl, bottleTex),
+      specular: createSolidColorTexture(gl, 255, 255, 255),
+      shininess: 16,
+    },
     transform: mat4.translate(mat4.create(), mat4.create(), bottleTranslate),
   };
 

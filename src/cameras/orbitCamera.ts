@@ -1,5 +1,5 @@
 import { Camera } from '../scenes/scene';
-import { glMatrix, vec3 } from 'gl-matrix';
+import { vec3 } from 'gl-matrix';
 
 export const orbitCamera = (
   gl: WebGLRenderingContext,
@@ -11,15 +11,8 @@ export const orbitCamera = (
   let camPhi = 0;
   let camTetha = 0;
 
-  const { canvas } = gl;
-
-  const debugInfo = document.createElement('p');
-  debugInfo.style.color = 'white';
-  canvas.parentElement.append(debugInfo);
-
-  const { cos, sin } = Math;
+  const { min, max, cos, sin, PI } = Math;
   const updateCamera = () => {
-    debugInfo.innerText = `φ: ${(camPhi * 180 / Math.PI).toFixed(2)}deg, θ: ${(camTetha * 180 / Math.PI).toFixed(2)}deg r: ${r.toFixed(2)}`;
     const camX = r * cos(camPhi) * sin(camTetha);
     const camY = r * sin(camPhi);
     const camZ = r * cos(camTetha) * cos(camPhi);
@@ -31,17 +24,17 @@ export const orbitCamera = (
   window.addEventListener('mousemove', (e) => {
     if (mouseDown) {
       const speed = 0.005;
-      camTetha = (camTetha - e.movementX * speed) % (Math.PI * 2);
+      camTetha = (camTetha - e.movementX * speed) % (PI * 2);
       camPhi = camPhi + e.movementY * speed;
 
-      camPhi = Math.min(Math.max(camPhi, -3.14 / 2), 3.14 / 2);
-      camTetha = camTetha < 0 ? Math.PI * 2 - camTetha : camTetha;
+      camPhi = min(max(camPhi, -3.14 / 2), 3.14 / 2);
+      camTetha = camTetha < 0 ? PI * 2 - camTetha : camTetha;
 
       updateCamera();
     }
   });
 
-  canvas.addEventListener('mousedown', (e) => {
+  gl.canvas.addEventListener('mousedown', (e) => {
     if (e.button === 0) {
       mouseDown = true;
     }
@@ -53,7 +46,7 @@ export const orbitCamera = (
 
   window.addEventListener('wheel', (e) => {
     r += e.deltaY * 0.01;
-    r = Math.max(r, 1);
+    r = max(r, 1);
     updateCamera();
   });
 

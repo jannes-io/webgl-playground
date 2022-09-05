@@ -3,3 +3,7 @@ body {
     background: #1e1e1e;
     overflow: hidden;
 }
+
+canvas {
+    border-bottom: 2px solid black;
+}

@@ -4,19 +4,15 @@ import objectVertexShader from './shaders/object.vert';
 import objectFragmentShader from './shaders/object.frag';
 import lightVertexShader from './shaders/light.vert';
 import lightFragmentShader from './shaders/light.frag';
-import {
-  bindArrayBuffer,
-  bindTexture,
-  initShaderProgram,
-} from './gl';
+import { bindArrayBuffer, bindTexture, initShaderProgram } from './gl';
 import { Scene } from './scenes/scene';
-import { loadBoxAndBottle, loadLotsOfBoxes } from './scenes';
+import { loadLotsOfBoxes } from './scenes';
 import box from './box';
 
 interface IProgramInfo {
   program: WebGLProgram;
   attribLocations: Record<string, number>;
-  uniformLocations: Record<string, WebGLUniformLocation>;
+  uniformLocations: Record<string, any>;
 }
 
 const drawScene = (
@@ -25,7 +21,7 @@ const drawScene = (
   objectShader: IProgramInfo,
   lightShader: IProgramInfo,
 ) => {
-  gl.clearColor(0.0, 0.0, 0.0, 1.0);
+  gl.clearColor(0.1, 0.1, 0.1, 1.0);
   gl.clearDepth(1.0);
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -47,17 +43,25 @@ const drawScene = (
     gl.uniformMatrix4fv(objectShader.uniformLocations.viewMatrix, false, viewMatrix);
     gl.uniformMatrix4fv(objectShader.uniformLocations.projectionMatrix, false, projectMatrix);
     gl.uniform3fv(objectShader.uniformLocations.lightColor, new Float32Array([1.0, 1.0, 1.0]));
-    gl.uniform3fv(objectShader.uniformLocations.lightPos, scene.lights[0]);
     gl.uniform3fv(objectShader.uniformLocations.viewPos, scene.camera.position);
 
-    scene.objects.forEach(({ objectBuffers, texture, transform }) => {
+    gl.uniform3fv(objectShader.uniformLocations.light.position, scene.lights[0]);
+    gl.uniform3fv(objectShader.uniformLocations.light.ambient, new Float32Array([0.2, 0.2, 0.2]));
+    gl.uniform3fv(objectShader.uniformLocations.light.diffuse, new Float32Array([0.5, 0.5, 0.5]));
+    gl.uniform3fv(objectShader.uniformLocations.light.specular, new Float32Array([1, 1, 1]));
+
+    scene.objects.forEach(({ objectBuffers, material, transform }) => {
       gl.uniformMatrix4fv(objectShader.uniformLocations.modelMatrix, false, transform);
 
-      bindArrayBuffer(gl, objectBuffers.position, objectShader.attribLocations.vertexPosition);
-      bindArrayBuffer(gl, objectBuffers.normal, objectShader.attribLocations.vertexNormal);
-      bindArrayBuffer(gl, objectBuffers.texture, objectShader.attribLocations.textureCoord);
+      bindArrayBuffer(gl, objectShader.attribLocations.vertexPosition, objectBuffers.position);
+      bindArrayBuffer(gl, objectShader.attribLocations.vertexNormal, objectBuffers.normal);
+      bindArrayBuffer(gl, objectShader.attribLocations.textureCoord, objectBuffers.texture);
 
-      bindTexture(gl, texture, objectShader.uniformLocations.sampler);
+      bindTexture(gl, objectShader.uniformLocations.material.diffuse, material.diffuse);
+      bindTexture(gl, objectShader.uniformLocations.material.specular, material.specular);
+
+      gl.uniform1f(objectShader.uniformLocations.material.shininess, material.shininess);
+
       gl.drawArrays(gl.TRIANGLES, 0, objectBuffers.vertexCount);
     });
   }
@@ -85,7 +89,7 @@ const drawScene = (
   }
 };
 
-const main = () => {
+const main = async () => {
   // Init canvas
   const canvas = document.createElement('canvas');
   canvas.width = parseInt(window.getComputedStyle(document.body).width, 10);
@@ -112,10 +116,18 @@ const main = () => {
       modelMatrix: gl.getUniformLocation(objectShader, 'uModelMatrix'),
       viewMatrix: gl.getUniformLocation(objectShader, 'uViewMatrix'),
       projectionMatrix: gl.getUniformLocation(objectShader, 'uProjectionMatrix'),
-      sampler: gl.getUniformLocation(objectShader, 'uSampler'),
-      lightColor: gl.getUniformLocation(objectShader, 'uLightColor'),
-      lightPos: gl.getUniformLocation(objectShader, 'uLightPos'),
       viewPos: gl.getUniformLocation(objectShader, 'uViewPos'),
+      material: {
+        diffuse: gl.getUniformLocation(objectShader, 'uMaterial.diffuse'),
+        specular: gl.getUniformLocation(objectShader, 'uMaterial.specular'),
+        shininess: gl.getUniformLocation(objectShader, 'uMaterial.shininess'),
+      },
+      light: {
+        position: gl.getUniformLocation(objectShader, 'uLight.position'),
+        ambient: gl.getUniformLocation(objectShader, 'uLight.ambient'),
+        diffuse: gl.getUniformLocation(objectShader, 'uLight.diffuse'),
+        specular: gl.getUniformLocation(objectShader, 'uLight.specular'),
+      },
     },
   };
 
@@ -134,7 +146,7 @@ const main = () => {
 
   // Render scene
   // const scene = loadBoxAndBottle(gl);
-  const scene = loadLotsOfBoxes(gl);
+  const scene = await loadLotsOfBoxes(gl);
 
   let prevFrame = 0;
   const render = (currFrame: DOMHighResTimeStamp) => {

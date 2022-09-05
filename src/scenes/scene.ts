@@ -1,9 +1,13 @@
 import { mat4, vec3 } from 'gl-matrix';
-import { GLObjectBuffers } from '../gl';
+import { GLObjectBuffers, TextureID } from '../gl';
 
 export interface SceneObject {
   objectBuffers: GLObjectBuffers;
-  texture: number;
+  material: {
+    diffuse: TextureID;
+    specular: TextureID;
+    shininess: number;
+  };
   transform: mat4;
 }
 
@@ -19,4 +23,4 @@ export interface Scene {
   animate?: (dt: number) => void;
 }
 
-export type SceneLoader = (gl: WebGLRenderingContext) => Scene;
+export type SceneLoader = (gl: WebGLRenderingContext) => Promise<Scene>;

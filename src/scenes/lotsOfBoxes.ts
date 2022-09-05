@@ -1,16 +1,20 @@
-import { SceneLoader } from './scene';
+import { SceneLoader, SceneObject } from './scene';
 import { parse } from '../objParser';
 import boxObj from './assets/smollbox.obj';
-import { createSolidColorTexture, initObjectBuffers } from '../gl';
+import containerDiffTex from './assets/container_diff.png';
+import containerSpecTex from './assets/container_spec.png';
+import { initObjectBuffers, loadTexture } from '../gl';
 import { mat4, vec3 } from 'gl-matrix';
 import { orbitCamera } from '../cameras';
 
-const loadScene: SceneLoader = (gl) => {
+const loadScene: SceneLoader = async (gl) => {
   const parsedBox = parse(boxObj);
+  const diffuse = await loadTexture(gl, containerDiffTex);
+  const specular = await loadTexture(gl, containerSpecTex);
 
   const modelMatrix = mat4.create();
 
-  const boxes = [];
+  const boxes: SceneObject[] = [];
   const count = 3;
   for (let i = 0; i < count; i++) {
     for (let j = 0; j < count; j++) {
@@ -24,15 +28,19 @@ const loadScene: SceneLoader = (gl) => {
         const boxMatrix = mat4.translate(mat4.create(), modelMatrix, [x, y, z]);
 
         // funky colors
-        const r = 255 / (count - 1) * i;
-        const g = 255 / (count - 1) * j;
-        const b = 255 / (count - 1) * k;
-
-        const texture = createSolidColorTexture(gl, r, g, b);
+        // const r = 255 / (count - 1) * i;
+        // const g = 255 / (count - 1) * j;
+        // const b = 255 / (count - 1) * k;
+        //
+        // const texture = createSolidColorTexture(gl, r, g, b);
 
         boxes.push({
           objectBuffers: initObjectBuffers(gl, parsedBox),
-          texture,
+          material: {
+            diffuse,
+            specular,
+            shininess: 32,
+          },
           transform: boxMatrix,
         });
       }
@@ -47,7 +55,7 @@ const loadScene: SceneLoader = (gl) => {
   return {
     objects: boxes,
     camera,
-    lights: [vec3.fromValues(3, 3, 2)],
+    lights: [vec3.fromValues(2, 0.9, 5)],
   };
 };
 
