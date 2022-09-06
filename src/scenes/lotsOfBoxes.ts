@@ -55,7 +55,7 @@ const loadScene: SceneLoader = async (gl) => {
   return {
     objects: boxes,
     camera,
-    lights: [vec3.fromValues(2, 0.9, 5)],
+    lights: [vec3.fromValues(-0.2, -1, -0.3)],
   };
 };
 
