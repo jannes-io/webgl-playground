@@ -38,17 +38,64 @@ const drawScene = (
 
   // Object shader
   {
-    gl.useProgram(objectShader.program);
+    const { program, uniformLocations } = objectShader;
+    gl.useProgram(program);
 
-    gl.uniformMatrix4fv(objectShader.uniformLocations.viewMatrix, false, viewMatrix);
-    gl.uniformMatrix4fv(objectShader.uniformLocations.projectionMatrix, false, projectMatrix);
-    gl.uniform3fv(objectShader.uniformLocations.lightColor, new Float32Array([1.0, 1.0, 1.0]));
-    gl.uniform3fv(objectShader.uniformLocations.viewPos, scene.camera.position);
+    gl.uniformMatrix4fv(uniformLocations.viewMatrix, false, viewMatrix);
+    gl.uniformMatrix4fv(uniformLocations.projectionMatrix, false, projectMatrix);
+    gl.uniform3fv(uniformLocations.lightColor, new Float32Array([1.0, 1.0, 1.0]));
+    gl.uniform3fv(uniformLocations.viewPos, scene.camera.position);
 
-    gl.uniform3fv(objectShader.uniformLocations.light.direction, scene.lights[0]);
-    gl.uniform3fv(objectShader.uniformLocations.light.ambient, new Float32Array([0.2, 0.2, 0.2]));
-    gl.uniform3fv(objectShader.uniformLocations.light.diffuse, new Float32Array([0.5, 0.5, 0.5]));
-    gl.uniform3fv(objectShader.uniformLocations.light.specular, new Float32Array([1, 1, 1]));
+    gl.uniform3fv(
+      gl.getUniformLocation(program, 'uDirLight.direction'),
+      new Float32Array([-0.2, -1, -0.3]),
+    );
+
+    gl.uniform3fv(
+      gl.getUniformLocation(program, 'uDirLight.ambient'),
+      new Float32Array([0.2, 0.2, 0.2]),
+    );
+    gl.uniform3fv(
+      gl.getUniformLocation(program, 'uDirLight.diffuse'),
+      new Float32Array([0.5, 0.5, 0.5]),
+    );
+    gl.uniform3fv(
+      gl.getUniformLocation(program, 'uDirLight.specular'),
+      new Float32Array([1, 1, 1]),
+    );
+
+    scene.lights.forEach((lightPos, i) => {
+      gl.uniform3fv(
+        gl.getUniformLocation(program, `uPointLights[${i}].position`),
+        lightPos,
+      );
+
+      gl.uniform3fv(
+        gl.getUniformLocation(program, `uPointLights[${i}].ambient`),
+        new Float32Array([0.2, 0.2, 0.2]),
+      );
+      gl.uniform3fv(
+        gl.getUniformLocation(program, `uPointLights[${i}].diffuse`),
+        new Float32Array([0.5, 0.5, 0.5]),
+      );
+      gl.uniform3fv(
+        gl.getUniformLocation(program, `uPointLights[${i}].specular`),
+        new Float32Array([1, 1, 1]),
+      );
+
+      gl.uniform1f(
+        gl.getUniformLocation(program, `uPointLights[${i}].constant`),
+        1,
+      );
+      gl.uniform1f(
+        gl.getUniformLocation(program, `uPointLights[${i}].linear`),
+        0.2,
+      );
+      gl.uniform1f(
+        gl.getUniformLocation(program, `uPointLights[${i}].quadratic`),
+        0.1,
+      );
+    });
 
     scene.objects.forEach(({ objectBuffers, material, transform }) => {
       gl.uniformMatrix4fv(objectShader.uniformLocations.modelMatrix, false, transform);
@@ -67,26 +114,26 @@ const drawScene = (
   }
 
   // Light shader
-  // if (scene.lights !== undefined) {
-  //   gl.useProgram(lightShader.program);
-  //
-  //   gl.uniformMatrix4fv(lightShader.uniformLocations.viewMatrix, false, viewMatrix);
-  //   gl.uniformMatrix4fv(lightShader.uniformLocations.projectionMatrix, false, projectMatrix);
-  //
-  //   scene.lights.forEach((location) => {
-  //     const modelMatrix = mat4.create();
-  //     mat4.translate(modelMatrix, modelMatrix, location);
-  //     mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(0.2, 0.2, 0.2));
-  //
-  //     gl.uniformMatrix4fv(lightShader.uniformLocations.modelMatrix, false, modelMatrix);
-  //
-  //     const positionBuffer = gl.createBuffer();
-  //     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  //     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(box), gl.STATIC_DRAW);
-  //
-  //     gl.drawArrays(gl.TRIANGLES, 0, 32);
-  //   });
-  // }
+  if (scene.lights !== undefined) {
+    gl.useProgram(lightShader.program);
+
+    gl.uniformMatrix4fv(lightShader.uniformLocations.viewMatrix, false, viewMatrix);
+    gl.uniformMatrix4fv(lightShader.uniformLocations.projectionMatrix, false, projectMatrix);
+
+    scene.lights.forEach((location) => {
+      const modelMatrix = mat4.create();
+      mat4.translate(modelMatrix, modelMatrix, location);
+      mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(0.2, 0.2, 0.2));
+
+      gl.uniformMatrix4fv(lightShader.uniformLocations.modelMatrix, false, modelMatrix);
+
+      const positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(box), gl.STATIC_DRAW);
+
+      gl.drawArrays(gl.TRIANGLES, 0, 32);
+    });
+  }
 };
 
 const main = async () => {
@@ -109,6 +156,10 @@ const main = async () => {
   gl.enable(gl.DEPTH_TEST);
   gl.depthFunc(gl.LEQUAL);
 
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ZERO);
+
   // Init shader programs
   const objectShader = initShaderProgram(gl, objectVertexShader, objectFragmentShader);
   const objectShaderInfo: IProgramInfo = {
@@ -127,12 +178,6 @@ const main = async () => {
         diffuse: gl.getUniformLocation(objectShader, 'uMaterial.diffuse'),
         specular: gl.getUniformLocation(objectShader, 'uMaterial.specular'),
         shininess: gl.getUniformLocation(objectShader, 'uMaterial.shininess'),
-      },
-      light: {
-        direction: gl.getUniformLocation(objectShader, 'uLight.direction'),
-        ambient: gl.getUniformLocation(objectShader, 'uLight.ambient'),
-        diffuse: gl.getUniformLocation(objectShader, 'uLight.diffuse'),
-        specular: gl.getUniformLocation(objectShader, 'uLight.specular'),
       },
     },
   };

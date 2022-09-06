@@ -1,7 +1,7 @@
 import { SceneLoader, SceneObject } from './scene';
 import { parse } from '../objParser';
 import boxObj from './assets/smollbox.obj';
-import containerDiffTex from './assets/container_diff.png';
+import containerDiffTex from './assets/container_hole_diff.png';
 import containerSpecTex from './assets/container_spec.png';
 import { initObjectBuffers, loadTexture } from '../gl';
 import { mat4, vec3 } from 'gl-matrix';
@@ -55,7 +55,12 @@ const loadScene: SceneLoader = async (gl) => {
   return {
     objects: boxes,
     camera,
-    lights: [vec3.fromValues(-0.2, -1, -0.3)],
+    lights: [
+      vec3.fromValues(2, 0.9, 3),
+      vec3.fromValues(-2.5, 2, 1.5),
+      vec3.fromValues(5, 0, 0),
+      vec3.fromValues(0, -1, -2),
+    ],
   };
 };
 
