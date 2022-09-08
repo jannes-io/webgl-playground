@@ -6,6 +6,7 @@ export interface SceneObject {
   material: {
     diffuse: TextureID;
     specular: TextureID;
+    normals: TextureID;
     shininess: number;
   };
   transform: mat4;

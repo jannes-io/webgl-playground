@@ -89,11 +89,11 @@ const drawScene = (
       );
       gl.uniform1f(
         gl.getUniformLocation(program, `uPointLights[${i}].linear`),
-        0.2,
+        0.22,
       );
       gl.uniform1f(
         gl.getUniformLocation(program, `uPointLights[${i}].quadratic`),
-        0.1,
+        0.20,
       );
     });
 
@@ -103,9 +103,12 @@ const drawScene = (
       bindArrayBuffer(gl, objectShader.attribLocations.vertexPosition, objectBuffers.position);
       bindArrayBuffer(gl, objectShader.attribLocations.vertexNormal, objectBuffers.normal);
       bindArrayBuffer(gl, objectShader.attribLocations.textureCoord, objectBuffers.texture);
+      bindArrayBuffer(gl, objectShader.attribLocations.tangent, objectBuffers.tangent);
+      bindArrayBuffer(gl, objectShader.attribLocations.bitangent, objectBuffers.bitangent);
 
       bindTexture(gl, objectShader.uniformLocations.material.diffuse, material.diffuse);
       bindTexture(gl, objectShader.uniformLocations.material.specular, material.specular);
+      bindTexture(gl, objectShader.uniformLocations.material.normals, material.normals);
 
       gl.uniform1f(objectShader.uniformLocations.material.shininess, material.shininess);
 
@@ -168,6 +171,8 @@ const main = async () => {
       vertexPosition: gl.getAttribLocation(objectShader, 'aVertexPosition'),
       vertexNormal: gl.getAttribLocation(objectShader, 'aVertexNormal'),
       textureCoord: gl.getAttribLocation(objectShader, 'aTextureCoord'),
+      tangent: gl.getAttribLocation(objectShader, 'aTangent'),
+      bitangent: gl.getAttribLocation(objectShader, 'aBitangent'),
     },
     uniformLocations: {
       modelMatrix: gl.getUniformLocation(objectShader, 'uModelMatrix'),
@@ -177,6 +182,7 @@ const main = async () => {
       material: {
         diffuse: gl.getUniformLocation(objectShader, 'uMaterial.diffuse'),
         specular: gl.getUniformLocation(objectShader, 'uMaterial.specular'),
+        normals: gl.getUniformLocation(objectShader, 'uMaterial.normals'),
         shininess: gl.getUniformLocation(objectShader, 'uMaterial.shininess'),
       },
     },

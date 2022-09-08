@@ -13,6 +13,7 @@ const loadScene: SceneLoader = async (gl) => {
     material: {
       diffuse: createSolidColorTexture(gl, 255, 0, 255),
       specular: createSolidColorTexture(gl, 255, 255, 255),
+      normals: createSolidColorTexture(gl, 127, 127, 255),
       shininess: 32,
     },
     transform: mat4.translate(mat4.create(), mat4.create(), boxTranslate),
@@ -24,6 +25,7 @@ const loadScene: SceneLoader = async (gl) => {
     material: {
       diffuse: await loadTexture(gl, bottleTex),
       specular: createSolidColorTexture(gl, 255, 255, 255),
+      normals: createSolidColorTexture(gl, 127, 127, 255),
       shininess: 16,
     },
     transform: mat4.translate(mat4.create(), mat4.create(), bottleTranslate),

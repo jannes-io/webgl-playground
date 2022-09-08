@@ -59,6 +59,8 @@ export const bindTexture = (gl: WebGLRenderingContext, bindLocation: WebGLUnifor
 export interface GLObjectBuffers {
   position: WebGLBuffer;
   normal: WebGLBuffer;
+  tangent: WebGLBuffer;
+  bitangent: WebGLBuffer;
   texture: WebGLBuffer;
   vertexCount: number;
 }
@@ -66,18 +68,26 @@ export interface GLObjectBuffers {
 export const initObjectBuffers = (gl: WebGLRenderingContext, obj: GLObject): GLObjectBuffers => {
   const position = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, position);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(obj.positions), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(obj.vertices), gl.STATIC_DRAW);
 
   const normal = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, normal);
   gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(obj.normals), gl.STATIC_DRAW);
 
+  const tangent = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, tangent);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(obj.tangents), gl.STATIC_DRAW);
+
+  const bitangent = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, bitangent);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(obj.bitangents), gl.STATIC_DRAW);
+
   const texture = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, texture);
-  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(obj.texCoords), gl.STATIC_DRAW);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(obj.uvs), gl.STATIC_DRAW);
 
   const { vertexCount } = obj;
-  return { position, normal, texture, vertexCount };
+  return { position, normal, tangent, bitangent, texture, vertexCount };
 };
 
 export const createSolidColorTexture = (

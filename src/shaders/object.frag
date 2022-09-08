@@ -7,10 +7,12 @@ precision mediump float;
 varying vec2 vTextureCoord;
 varying vec3 vNormal;
 varying vec3 vFragPos;
+varying mat3 vTBN;
 
 struct Material {
     sampler2D diffuse;
     sampler2D specular;
+    sampler2D normals;
     float shininess;
 };
 
@@ -82,12 +84,15 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
 }
 
 void main() {
-    vec3 norm = normalize(vNormal);
+    vec3 normal = texture2D(uMaterial.normals, vTextureCoord).xyz;
+    normal = normal * 2.0 - 1.0;
+    normal = normalize(vTBN * normal);
+
     vec3 viewDir = normalize(uViewPos - vFragPos);
 
-    vec3 result = CalcDirLight(uDirLight, norm, viewDir);
+    vec3 result = CalcDirLight(uDirLight, normal, viewDir);
     for (int i = 0; i < NR_POINT_LIGHTS; i++) {
-        result += CalcPointLight(uPointLights[i], norm, vFragPos, viewDir);
+        result += CalcPointLight(uPointLights[i], normal, vFragPos, viewDir);
     }
 
     // result
