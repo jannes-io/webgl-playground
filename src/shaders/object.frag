@@ -50,8 +50,8 @@ vec3 CalcDirLight(DirLight light, vec3 normal, vec3 viewDir)
     float diff = max(dot(normal, lightDir), 0.0);
 
     // specular shading
-    vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), uMaterial.shininess);
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), uMaterial.shininess);
 
     // combine results
     vec3 ambient = light.ambient * texture2D(uMaterial.diffuse, vTextureCoord).xyz;
@@ -68,8 +68,8 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     float diff = max(dot(normal, lightDir), 0.0);
 
     // specular shading
-    vec3 reflectDir = reflect(-lightDir, normal);
-    float spec = pow(max(dot(viewDir, reflectDir), 0.0), uMaterial.shininess);
+    vec3 halfwayDir = normalize(lightDir + viewDir);
+    float spec = pow(max(dot(normal, halfwayDir), 0.0), uMaterial.shininess);
 
     // attenuation
     float distance = length(light.position - fragPos);
@@ -92,7 +92,9 @@ void main() {
 
     vec3 result = CalcDirLight(uDirLight, normal, viewDir);
     for (int i = 0; i < NR_POINT_LIGHTS; i++) {
-        result += CalcPointLight(uPointLights[i], normal, vFragPos, viewDir);
+        if (uPointLights[i].constant == 1.0) {
+            result += CalcPointLight(uPointLights[i], normal, vFragPos, viewDir);
+        }
     }
 
     // result

@@ -6,7 +6,7 @@ import lightVertexShader from './shaders/light.vert';
 import lightFragmentShader from './shaders/light.frag';
 import { bindArrayBuffer, bindTexture, initShaderProgram } from './gl';
 import { Scene } from './scenes/scene';
-import { loadLotsOfBoxes } from './scenes';
+import { loadWalls } from './scenes';
 import box from './box';
 
 interface IProgramInfo {
@@ -134,6 +134,10 @@ const drawScene = (
       gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
       gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(box), gl.STATIC_DRAW);
 
+      const vertexPosition = gl.getAttribLocation(lightShader.program, 'aVertexPosition');
+      gl.vertexAttribPointer(vertexPosition, 3, gl.FLOAT, false, 0, 0);
+      gl.enableVertexAttribArray(vertexPosition);
+
       gl.drawArrays(gl.TRIANGLES, 0, 32);
     });
   }
@@ -203,7 +207,8 @@ const main = async () => {
 
   // Render scene
   // const scene = loadBoxAndBottle(gl);
-  const scene = await loadLotsOfBoxes(gl);
+  // const scene = await loadLotsOfBoxes(gl);
+  const scene = await loadWalls(gl);
 
   let prevFrame = 0;
   const render = (currFrame: DOMHighResTimeStamp) => {
