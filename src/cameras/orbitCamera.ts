@@ -21,34 +21,89 @@ export const orbitCamera = (
   };
   updateCamera();
 
-  window.addEventListener('mousemove', (e) => {
+  let currTouch: { x: number, y: number };
+  const updateCurrTouch = (touch: Touch) => {
+    currTouch = {
+      x: touch.clientX,
+      y: touch.clientY,
+    };
+  };
+
+  const onTouch = (e: MouseEvent | TouchEvent) => {
+    // MouseEvent
+    if ('button' in e) {
+      if (e.button === 0) {
+        mouseDown = true;
+      }
+      return;
+    }
+
+    // TouchEvent
+    if ('changedTouches' in e && e.changedTouches.length > 0) {
+      mouseDown = true;
+      updateCurrTouch(e.changedTouches[0]);
+    }
+  };
+
+  const getMovement = (e: MouseEvent | TouchEvent) => {
+    const speed = 0.005;
+    const touchSpeed = speed * 2;
+
+    // MouseEvent
+    if ('movementX' in e && 'movementY' in e) {
+      return { x: e.movementX * speed, y: e.movementY * speed };
+    }
+
+    // TouchEvent
+    if ('changedTouches' in e && e.changedTouches.length > 0) {
+      const touch = e.changedTouches[0];
+
+      const x = -(currTouch.x - touch.clientX) * touchSpeed;
+      const y = -(currTouch.y - touch.clientY) * touchSpeed;
+
+      updateCurrTouch(touch);
+      return { x, y };
+    }
+  };
+
+  const onMove = (e: MouseEvent | TouchEvent) => {
+    let movement = getMovement(e);
+
     if (mouseDown) {
-      const speed = 0.005;
-      camTetha = (camTetha - e.movementX * speed) % (PI * 2);
-      camPhi = camPhi + e.movementY * speed;
+      camTetha = (camTetha - movement.x) % (PI * 2);
+      camPhi = camPhi + movement.y;
 
       camPhi = min(max(camPhi, -3.14 / 2), 3.14 / 2);
       camTetha = camTetha < 0 ? PI * 2 - camTetha : camTetha;
 
       updateCamera();
     }
-  });
+  };
 
-  gl.canvas.addEventListener('mousedown', (e) => {
-    if (e.button === 0) {
-      mouseDown = true;
+  const onRelease = (e: MouseEvent | TouchEvent) => {
+    if ('changedTouches' in e && e.changedTouches.length > 0) {
+      currTouch.x = e.changedTouches[0].clientX;
+      currTouch.y = e.changedTouches[0].clientY;
     }
-  });
-
-  window.addEventListener('mouseup', () => {
     mouseDown = false;
-  });
+  };
 
-  window.addEventListener('wheel', (e) => {
+  const onZoom = (e: WheelEvent) => {
     r += e.deltaY * 0.01;
     r = max(r, 1);
     updateCamera();
-  });
+  };
+
+  gl.canvas.addEventListener('mousedown', onTouch);
+  gl.canvas.addEventListener('touchstart', onTouch);
+
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('touchmove', onMove);
+
+  window.addEventListener('mouseup', onRelease);
+  window.addEventListener('touchend', onRelease);
+
+  window.addEventListener('wheel', onZoom);
 
   return camera;
 };
