@@ -105,6 +105,18 @@ export const createSolidColorTexture = (
   return textureAtlas.length - 1;
 };
 
+export const createSolidWhiteTexture = (
+  gl: WebGLRenderingContext,
+) => createSolidColorTexture(gl, 255, 255, 255);
+
+export const createSolidBlackTexture = (
+  gl: WebGLRenderingContext,
+) => createSolidColorTexture(gl, 0, 0, 0);
+
+export const createFlatNormalTexture = (
+  gl: WebGLRenderingContext,
+) => createSolidColorTexture(gl, 127, 127, 255);
+
 export const loadTexture = (gl: WebGLRenderingContext, url: string): Promise<number> => {
   const texture = gl.createTexture();
 

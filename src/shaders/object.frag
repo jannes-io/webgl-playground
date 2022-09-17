@@ -83,7 +83,8 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     return (ambient * attenuation + diffuse * attenuation + specular * attenuation);
 }
 
-void main() {
+void main()
+{
     vec3 normal = texture2D(uMaterial.normals, vTextureCoord).xyz;
     normal = normal * 2.0 - 1.0;
     normal = normalize(vTBN * normal);

@@ -1,13 +1,10 @@
 import './global.css';
 import { mat4, glMatrix, vec3 } from 'gl-matrix';
-import objectVertexShader from './shaders/object.vert';
-import objectFragmentShader from './shaders/object.frag';
-import lightVertexShader from './shaders/light.vert';
-import lightFragmentShader from './shaders/light.frag';
+import pbrVertexShader from './shaders/pbr.vert';
+import pbrFragmentShader from './shaders/pbr.frag';
 import { bindArrayBuffer, bindTexture, initShaderProgram } from './gl';
-import { Scene } from './scenes/scene';
-import { loadWalls } from './scenes';
-import box from './box';
+import { PBRMaterial, Scene } from './scenes/scene';
+import { loadHatch } from './scenes';
 
 interface IProgramInfo {
   program: WebGLProgram;
@@ -17,9 +14,8 @@ interface IProgramInfo {
 
 const drawScene = (
   gl: WebGLRenderingContext,
-  scene: Scene,
-  objectShader: IProgramInfo,
-  lightShader: IProgramInfo,
+  scene: Scene<PBRMaterial>,
+  programInfo: IProgramInfo,
 ) => {
   gl.clearColor(0.1, 0.1, 0.1, 1.0);
   gl.clearDepth(1.0);
@@ -36,111 +32,39 @@ const drawScene = (
   const projectMatrix = mat4.create();
   mat4.perspective(projectMatrix, glMatrix.toRadian(45), aspect, 0.1, 1000.0);
 
-  // Object shader
-  {
-    const { program, uniformLocations } = objectShader;
-    gl.useProgram(program);
+  const { program, uniformLocations, attribLocations } = programInfo;
+  gl.useProgram(program);
 
-    gl.uniformMatrix4fv(uniformLocations.viewMatrix, false, viewMatrix);
-    gl.uniformMatrix4fv(uniformLocations.projectionMatrix, false, projectMatrix);
-    gl.uniform3fv(uniformLocations.lightColor, new Float32Array([1.0, 1.0, 1.0]));
-    gl.uniform3fv(uniformLocations.viewPos, scene.camera.position);
+  gl.uniformMatrix4fv(uniformLocations.viewMatrix, false, viewMatrix);
+  gl.uniformMatrix4fv(uniformLocations.projectionMatrix, false, projectMatrix);
+  gl.uniform3fv(uniformLocations.viewPos, scene.camera.position);
 
+  scene.lights.forEach((lightPos, i) => {
     gl.uniform3fv(
-      gl.getUniformLocation(program, 'uDirLight.direction'),
-      new Float32Array([-0.2, -1, -0.3]),
-    );
-
-    gl.uniform3fv(
-      gl.getUniformLocation(program, 'uDirLight.ambient'),
-      new Float32Array([0.2, 0.2, 0.2]),
+      gl.getUniformLocation(program, `uPointLights[${i}].position`),
+      lightPos,
     );
     gl.uniform3fv(
-      gl.getUniformLocation(program, 'uDirLight.diffuse'),
-      new Float32Array([0.5, 0.5, 0.5]),
+      gl.getUniformLocation(program, `uPointLights[${i}].color`),
+      new Float32Array([300, 300, 300]),
     );
-    gl.uniform3fv(
-      gl.getUniformLocation(program, 'uDirLight.specular'),
-      new Float32Array([1, 1, 1]),
-    );
+  });
 
-    scene.lights.forEach((lightPos, i) => {
-      gl.uniform3fv(
-        gl.getUniformLocation(program, `uPointLights[${i}].position`),
-        lightPos,
-      );
+  scene.objects.forEach(({ objectBuffers, material, transform }) => {
+    gl.uniformMatrix4fv(uniformLocations.modelMatrix, false, transform);
 
-      gl.uniform3fv(
-        gl.getUniformLocation(program, `uPointLights[${i}].ambient`),
-        new Float32Array([0.2, 0.2, 0.2]),
-      );
-      gl.uniform3fv(
-        gl.getUniformLocation(program, `uPointLights[${i}].diffuse`),
-        new Float32Array([0.5, 0.5, 0.5]),
-      );
-      gl.uniform3fv(
-        gl.getUniformLocation(program, `uPointLights[${i}].specular`),
-        new Float32Array([1, 1, 1]),
-      );
+    bindArrayBuffer(gl, attribLocations.vertexPosition, objectBuffers.position);
+    bindArrayBuffer(gl, attribLocations.vertexNormal, objectBuffers.normal);
+    bindArrayBuffer(gl, attribLocations.textureCoord, objectBuffers.texture);
 
-      gl.uniform1f(
-        gl.getUniformLocation(program, `uPointLights[${i}].constant`),
-        1,
-      );
-      gl.uniform1f(
-        gl.getUniformLocation(program, `uPointLights[${i}].linear`),
-        0.22,
-      );
-      gl.uniform1f(
-        gl.getUniformLocation(program, `uPointLights[${i}].quadratic`),
-        0.20,
-      );
-    });
+    bindTexture(gl, uniformLocations.material.albedo, material.albedo);
+    bindTexture(gl, uniformLocations.material.normal, material.normal);
+    bindTexture(gl, uniformLocations.material.metallic, material.metallic);
+    bindTexture(gl, uniformLocations.material.roughness, material.roughness);
+    bindTexture(gl, uniformLocations.material.ao, material.ao);
 
-    scene.objects.forEach(({ objectBuffers, material, transform }) => {
-      gl.uniformMatrix4fv(objectShader.uniformLocations.modelMatrix, false, transform);
-
-      bindArrayBuffer(gl, objectShader.attribLocations.vertexPosition, objectBuffers.position);
-      bindArrayBuffer(gl, objectShader.attribLocations.vertexNormal, objectBuffers.normal);
-      bindArrayBuffer(gl, objectShader.attribLocations.textureCoord, objectBuffers.texture);
-      bindArrayBuffer(gl, objectShader.attribLocations.tangent, objectBuffers.tangent);
-      bindArrayBuffer(gl, objectShader.attribLocations.bitangent, objectBuffers.bitangent);
-
-      bindTexture(gl, objectShader.uniformLocations.material.diffuse, material.diffuse);
-      bindTexture(gl, objectShader.uniformLocations.material.specular, material.specular);
-      bindTexture(gl, objectShader.uniformLocations.material.normals, material.normals);
-
-      gl.uniform1f(objectShader.uniformLocations.material.shininess, material.shininess);
-
-      gl.drawArrays(gl.TRIANGLES, 0, objectBuffers.vertexCount);
-    });
-  }
-
-  // Light shader
-  if (scene.lights !== undefined) {
-    gl.useProgram(lightShader.program);
-
-    gl.uniformMatrix4fv(lightShader.uniformLocations.viewMatrix, false, viewMatrix);
-    gl.uniformMatrix4fv(lightShader.uniformLocations.projectionMatrix, false, projectMatrix);
-
-    scene.lights.forEach((location) => {
-      const modelMatrix = mat4.create();
-      mat4.translate(modelMatrix, modelMatrix, location);
-      mat4.scale(modelMatrix, modelMatrix, vec3.fromValues(0.2, 0.2, 0.2));
-
-      gl.uniformMatrix4fv(lightShader.uniformLocations.modelMatrix, false, modelMatrix);
-
-      const positionBuffer = gl.createBuffer();
-      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(box), gl.STATIC_DRAW);
-
-      const vertexPosition = gl.getAttribLocation(lightShader.program, 'aVertexPosition');
-      gl.vertexAttribPointer(vertexPosition, 3, gl.FLOAT, false, 0, 0);
-      gl.enableVertexAttribArray(vertexPosition);
-
-      gl.drawArrays(gl.TRIANGLES, 0, 32);
-    });
-  }
+    gl.drawArrays(gl.TRIANGLES, 0, objectBuffers.vertexCount);
+  });
 };
 
 const main = async () => {
@@ -167,55 +91,44 @@ const main = async () => {
   gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
   gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ZERO);
 
+  gl.getExtension('OES_standard_derivatives');
+
+  gl.enable(gl.CULL_FACE);
+  gl.cullFace(gl.BACK);
+
   // Init shader programs
-  const objectShader = initShaderProgram(gl, objectVertexShader, objectFragmentShader);
-  const objectShaderInfo: IProgramInfo = {
-    program: objectShader,
+  const pbr = initShaderProgram(gl, pbrVertexShader, pbrFragmentShader);
+  const pbrShaderInfo: IProgramInfo = {
+    program: pbr,
     attribLocations: {
-      vertexPosition: gl.getAttribLocation(objectShader, 'aVertexPosition'),
-      vertexNormal: gl.getAttribLocation(objectShader, 'aVertexNormal'),
-      textureCoord: gl.getAttribLocation(objectShader, 'aTextureCoord'),
-      tangent: gl.getAttribLocation(objectShader, 'aTangent'),
-      bitangent: gl.getAttribLocation(objectShader, 'aBitangent'),
+      vertexPosition: gl.getAttribLocation(pbr, 'aVertexPosition'),
+      vertexNormal: gl.getAttribLocation(pbr, 'aVertexNormal'),
+      textureCoord: gl.getAttribLocation(pbr, 'aTextureCoord'),
     },
     uniformLocations: {
-      modelMatrix: gl.getUniformLocation(objectShader, 'uModelMatrix'),
-      viewMatrix: gl.getUniformLocation(objectShader, 'uViewMatrix'),
-      projectionMatrix: gl.getUniformLocation(objectShader, 'uProjectionMatrix'),
-      viewPos: gl.getUniformLocation(objectShader, 'uViewPos'),
+      modelMatrix: gl.getUniformLocation(pbr, 'uModelMatrix'),
+      viewMatrix: gl.getUniformLocation(pbr, 'uViewMatrix'),
+      projectionMatrix: gl.getUniformLocation(pbr, 'uProjectionMatrix'),
+      viewPos: gl.getUniformLocation(pbr, 'uViewPos'),
       material: {
-        diffuse: gl.getUniformLocation(objectShader, 'uMaterial.diffuse'),
-        specular: gl.getUniformLocation(objectShader, 'uMaterial.specular'),
-        normals: gl.getUniformLocation(objectShader, 'uMaterial.normals'),
-        shininess: gl.getUniformLocation(objectShader, 'uMaterial.shininess'),
+        albedo: gl.getUniformLocation(pbr, 'uMaterial.albedo'),
+        normal: gl.getUniformLocation(pbr, 'uMaterial.normal'),
+        metallic: gl.getUniformLocation(pbr, 'uMaterial.metallic'),
+        roughness: gl.getUniformLocation(pbr, 'uMaterial.roughness'),
+        ao: gl.getUniformLocation(pbr, 'uMaterial.ao'),
       },
     },
   };
 
-  const lightShader = initShaderProgram(gl, lightVertexShader, lightFragmentShader);
-  const lightShaderInfo: IProgramInfo = {
-    program: lightShader,
-    attribLocations: {
-      vertexPosition: gl.getAttribLocation(lightShader, 'aVertexPosition'),
-    },
-    uniformLocations: {
-      modelMatrix: gl.getUniformLocation(lightShader, 'uModelMatrix'),
-      viewMatrix: gl.getUniformLocation(lightShader, 'uViewMatrix'),
-      projectionMatrix: gl.getUniformLocation(lightShader, 'uProjectionMatrix'),
-    },
-  };
-
   // Render scene
-  // const scene = loadBoxAndBottle(gl);
-  // const scene = await loadLotsOfBoxes(gl);
-  const scene = await loadWalls(gl);
+  const scene = await loadHatch(gl);
 
   let prevFrame = 0;
   const render = (currFrame: DOMHighResTimeStamp) => {
     const deltaTime = currFrame - prevFrame;
     prevFrame = currFrame;
 
-    drawScene(gl, scene, objectShaderInfo, lightShaderInfo);
+    drawScene(gl, scene, pbrShaderInfo);
     if (scene.animate !== undefined) {
       scene.animate(deltaTime);
     }

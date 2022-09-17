@@ -1,4 +1,4 @@
-import { SceneLoader } from './scene';
+import { PhongMaterial, SceneLoader } from './scene';
 import { parse } from '../objParser';
 import gridObj from './assets/grid.obj';
 import gridDiffTex from './assets/brick_diffuse.png';
@@ -7,7 +7,7 @@ import { createSolidColorTexture, initObjectBuffers, loadTexture } from '../gl';
 import { glMatrix, mat4, vec3 } from 'gl-matrix';
 import { orbitCamera } from '../cameras';
 
-const walls: SceneLoader = async (gl) => {
+const walls: SceneLoader<PhongMaterial> = async (gl) => {
   const plane = parse(gridObj);
   const diffuse = await loadTexture(gl, gridDiffTex);
   const normals = await loadTexture(gl, gridNormTex);

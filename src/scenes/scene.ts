@@ -1,14 +1,26 @@
 import { mat4, vec3 } from 'gl-matrix';
 import { GLObjectBuffers, TextureID } from '../gl';
 
-export interface SceneObject {
+export interface PhongMaterial {
+  diffuse: TextureID;
+  specular: TextureID;
+  normals: TextureID;
+  shininess: number;
+}
+
+export interface PBRMaterial {
+  albedo: TextureID;
+  normal: TextureID;
+  metallic: TextureID;
+  roughness: TextureID;
+  ao: TextureID;
+}
+
+type Material = PhongMaterial | PBRMaterial;
+
+export interface SceneObject<Mat extends Material> {
   objectBuffers: GLObjectBuffers;
-  material: {
-    diffuse: TextureID;
-    specular: TextureID;
-    normals: TextureID;
-    shininess: number;
-  };
+  material: Mat;
   transform: mat4;
 }
 
@@ -17,11 +29,11 @@ export interface Camera {
   target: vec3;
 }
 
-export interface Scene {
-  objects: SceneObject[];
+export interface Scene<Mat extends Material> {
+  objects: SceneObject<Mat>[];
   lights?: vec3[];
   camera?: Camera;
   animate?: (dt: number) => void;
 }
 
-export type SceneLoader = (gl: WebGLRenderingContext) => Promise<Scene>;
+export type SceneLoader<Mat extends Material> = (gl: WebGLRenderingContext) => Promise<Scene<Mat>>;

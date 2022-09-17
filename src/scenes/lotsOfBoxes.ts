@@ -1,4 +1,4 @@
-import { SceneLoader, SceneObject } from './scene';
+import { PhongMaterial, SceneLoader, SceneObject } from './scene';
 import { parse } from '../objParser';
 import boxObj from './assets/smollbox_more_faces.obj';
 import containerDiffTex from './assets/box_low_diff.png';
@@ -8,7 +8,7 @@ import { initObjectBuffers, loadTexture } from '../gl';
 import { mat4, vec3 } from 'gl-matrix';
 import { orbitCamera } from '../cameras';
 
-const loadScene: SceneLoader = async (gl) => {
+const loadScene: SceneLoader<PhongMaterial> = async (gl) => {
   const parsedBox = parse(boxObj);
   const diffuse = await loadTexture(gl, containerDiffTex);
   const specular = await loadTexture(gl, containerSpecTex);
@@ -16,7 +16,7 @@ const loadScene: SceneLoader = async (gl) => {
 
   const modelMatrix = mat4.create();
 
-  const boxes: SceneObject[] = [];
+  const boxes: SceneObject<PhongMaterial>[] = [];
   const count = 3;
   for (let i = 0; i < count; i++) {
     for (let j = 0; j < count; j++) {
