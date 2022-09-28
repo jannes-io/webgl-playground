@@ -1,4 +1,4 @@
-import { parse } from '../objParser';
+import { parseObj } from '../objParser';
 import boxObj from './assets/box.obj';
 import { mat4 } from 'gl-matrix';
 import bottleObj from './assets/bottle.obj';
@@ -15,7 +15,7 @@ import {
 const loadScene: SceneLoader<PhongMaterial> = async (gl) => {
   const boxTranslate = new Float32Array([-30, -50, -200.0]);
   const box: SceneObject<PhongMaterial> = {
-    objectBuffers: initObjectBuffers(gl, parse(boxObj)),
+    objectBuffers: initObjectBuffers(gl, parseObj(boxObj)),
     material: {
       diffuse: createSolidColorTexture(gl, 255, 0, 255),
       specular: createSolidWhiteTexture(gl),
@@ -27,7 +27,7 @@ const loadScene: SceneLoader<PhongMaterial> = async (gl) => {
 
   const bottleTranslate = new Float32Array([30, -35, -100.0]);
   const bottle: SceneObject<PhongMaterial> = {
-    objectBuffers: initObjectBuffers(gl, parse(bottleObj)),
+    objectBuffers: initObjectBuffers(gl, parseObj(bottleObj)),
     material: {
       diffuse: await loadTexture(gl, bottleTex),
       specular: createSolidWhiteTexture(gl),

@@ -4,6 +4,24 @@ export type TextureID = number;
 
 export const textureAtlas: WebGLTexture[] = [];
 
+// IDE seems to not understand that WebGL2RenderingContext also contains everything from WebGLRenderingContext
+export type WebGLContext = WebGLRenderingContext & WebGL2RenderingContext;
+
+export const initGl = (canvas: HTMLCanvasElement): WebGLContext => {
+  const gl = canvas.getContext('webgl2');
+
+  // Depth test
+  gl.enable(gl.DEPTH_TEST);
+  gl.depthFunc(gl.LEQUAL);
+
+  // Transparency blend
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ZERO);
+
+  return gl;
+};
+
 export const loadShader = (
   gl: WebGLRenderingContext,
   type: GLenum,

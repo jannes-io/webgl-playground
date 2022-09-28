@@ -34,6 +34,7 @@ export interface Scene<Mat extends Material> {
   lights?: vec3[];
   camera?: Camera;
   animate?: (dt: number) => void;
+  hdr?: TextureID;
 }
 
 export type SceneLoader<Mat extends Material> = (gl: WebGLRenderingContext) => Promise<Scene<Mat>>;

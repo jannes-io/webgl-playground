@@ -1,6 +1,6 @@
 import { PBRMaterial, SceneLoader, SceneObject } from './scene';
 import { glMatrix, mat4, vec3 } from 'gl-matrix';
-import { parse } from '../objParser';
+import { parseObj } from '../objParser';
 import gridObj from './assets/grid.obj';
 
 import { initObjectBuffers, loadTexture } from '../gl';
@@ -12,7 +12,7 @@ import hatchAO from './assets/hatch_ao.png';
 import { orbitCamera } from '../cameras';
 
 const loadScene: SceneLoader<PBRMaterial> = async (gl) => {
-  const objectBuffers = initObjectBuffers(gl, parse(gridObj));
+  const objectBuffers = initObjectBuffers(gl, parseObj(gridObj));
   const albedo = await loadTexture(gl, hatchAlbedo);
   const normal = await loadTexture(gl, hatchNormal);
   const metallic = await loadTexture(gl, hatchMetallic);

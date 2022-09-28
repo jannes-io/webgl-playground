@@ -85,7 +85,7 @@ const calculateTangents = ({ vertices, uvs }: PreTangentObject) => {
   return { tangents, bitangents };
 };
 
-export const parse = (obj: string): GLObject => {
+export const parseObj = (obj: string): GLObject => {
   const lines = obj
     .replaceAll('\r', '')
     .split('\n')

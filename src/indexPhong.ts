@@ -4,7 +4,7 @@ import objectVertexShader from './shaders/object.vert';
 import objectFragmentShader from './shaders/object.frag';
 import lightVertexShader from './shaders/light.vert';
 import lightFragmentShader from './shaders/light.frag';
-import { bindArrayBuffer, bindTexture, initShaderProgram } from './gl';
+import { bindArrayBuffer, bindTexture, initGl, initShaderProgram } from './gl';
 import { PhongMaterial, Scene } from './scenes/scene';
 import { loadWalls } from './scenes';
 import box from './box';
@@ -158,14 +158,7 @@ const main = async () => {
   document.body.append(debug);
 
   // Init GL
-  const gl = canvas.getContext('webgl');
-
-  gl.enable(gl.DEPTH_TEST);
-  gl.depthFunc(gl.LEQUAL);
-
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-  gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ZERO);
+  const gl = initGl(canvas);
 
   // Init shader programs
   const objectShader = initShaderProgram(gl, objectVertexShader, objectFragmentShader);
