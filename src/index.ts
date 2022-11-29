@@ -6,8 +6,9 @@ import cubeVertexShader from './shaders/cubemap.vert';
 import cubeFragmentShader from './shaders/cubemap.frag';
 import skyboxVertexShader from './shaders/skybox.vert';
 import skyboxFragmentShader from './shaders/skybox.frag';
+import irradianceFragmentShader from './shaders/irradiance.frag';
 import {
-  bindArrayBuffer,
+  bindArrayBuffer, bindCubeTexture,
   bindTexture,
   initGl,
   initShaderProgram, textureAtlas, WebGLContext,
@@ -87,6 +88,7 @@ const main = async () => {
         roughness: gl.getUniformLocation(pbr, 'uMaterial.roughness'),
         ao: gl.getUniformLocation(pbr, 'uMaterial.ao'),
       },
+      irradianceMap: gl.getUniformLocation(pbr, 'uIrradianceMap'),
     },
   };
 
@@ -99,6 +101,7 @@ const main = async () => {
     uniformLocations: {
       projectionMatrix: gl.getUniformLocation(skybox, 'uProjectionMatrix'),
       viewMatrix: gl.getUniformLocation(skybox, 'uViewMatrix'),
+      environmentMap: gl.getUniformLocation(skybox, 'uEnvironmentMap'),
     },
   };
 
@@ -127,31 +130,8 @@ const main = async () => {
   textureAtlas.push(hdrTexture);
   const hdr = textureAtlas.length - 1;
 
-  const cubeMapShader = initShaderProgram(gl, cubeVertexShader, cubeFragmentShader);
-  gl.useProgram(cubeMapShader);
-
   const captureFBO = gl.createFramebuffer();
   const captureRBO = gl.createRenderbuffer();
-
-  gl.bindFramebuffer(gl.FRAMEBUFFER, captureFBO);
-  gl.bindRenderbuffer(gl.RENDERBUFFER, captureRBO);
-  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, 1024, 1024);
-  gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, captureRBO);
-
-  const uViewMatrix = gl.getUniformLocation(cubeMapShader, 'uViewMatrix');
-  const uProjectionMatrix = gl.getUniformLocation(cubeMapShader, 'uProjectionMatrix');
-  const uEquirectangularMap = gl.getUniformLocation(cubeMapShader, 'uEquirectangularMap');
-
-  const cubeMap = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
-  for (let i = 0; i < 6; i++) {
-    gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGB, 1024, 1024, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
-  }
-  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
   const captureProjection = mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1.0, 0.1, 10.0);
   const eye: ReadonlyVec3 = [0.0, 0.0, 0.0];
@@ -164,20 +144,89 @@ const main = async () => {
     mat4.lookAt(mat4.create(), eye, [0.0, 0.0, -1.0], [0.0, -1.0, 0.0]),
   ];
 
-  bindTexture(gl, uEquirectangularMap, hdr);
-  gl.uniformMatrix4fv(uProjectionMatrix, false, captureProjection);
-  gl.viewport(0, 0, 1024, 1024);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, captureFBO);
+  const cubeMap = gl.createTexture();
+  textureAtlas.push(cubeMap);
+  const cubeMapId = textureAtlas.length - 1;
+  {
+    const cubeMapShader = initShaderProgram(gl, cubeVertexShader, cubeFragmentShader);
+    gl.useProgram(cubeMapShader);
 
-  const aPosition = gl.getAttribLocation(cubeMapShader, 'aPosition');
-  for (let i = 0; i < 6; i++) {
-    gl.uniformMatrix4fv(uViewMatrix, false, captureViews[i]);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, cubeMap, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, captureFBO);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, captureRBO);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, 512, 512);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, captureRBO);
 
-    renderCube(gl, aPosition);
+    const uViewMatrix = gl.getUniformLocation(cubeMapShader, 'uViewMatrix');
+    const uProjectionMatrix = gl.getUniformLocation(cubeMapShader, 'uProjectionMatrix');
+    const uEquirectangularMap = gl.getUniformLocation(cubeMapShader, 'uEquirectangularMap');
+
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, cubeMap);
+    for (let i = 0; i < 6; i++) {
+      gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGB, 512, 512, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
+    }
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+    bindTexture(gl, uEquirectangularMap, hdr);
+    gl.uniformMatrix4fv(uProjectionMatrix, false, captureProjection);
+    gl.viewport(0, 0, 512, 512);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, captureFBO);
+
+    const aPosition = gl.getAttribLocation(cubeMapShader, 'aPosition');
+    captureViews.forEach((view, i) => {
+      gl.uniformMatrix4fv(uViewMatrix, false, view);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, cubeMap, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+      renderCube(gl, aPosition);
+    });
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+  const irradianceMap = gl.createTexture();
+  textureAtlas.push(irradianceMap);
+  const irradianceMapId = textureAtlas.length - 1;
+  {
+    gl.bindTexture(gl.TEXTURE_CUBE_MAP, irradianceMap);
+    for (let i = 0; i < 6; i++) {
+      gl.texImage2D(gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, gl.RGB, 32, 32, 0, gl.RGB, gl.UNSIGNED_BYTE, null);
+    }
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_CUBE_MAP, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, captureFBO);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, captureRBO);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, 32, 32);
+
+    const irradianceShader = initShaderProgram(gl, cubeVertexShader, irradianceFragmentShader);
+    gl.useProgram(irradianceShader);
+
+    const uViewMatrix = gl.getUniformLocation(irradianceShader, 'uViewMatrix');
+    const uProjectionMatrix = gl.getUniformLocation(irradianceShader, 'uProjectionMatrix');
+    const uEquirectangularMap = gl.getUniformLocation(irradianceShader, 'uEquirectangularMap');
+
+    bindTexture(gl, uEquirectangularMap, cubeMapId);
+    gl.uniformMatrix4fv(uProjectionMatrix, false, captureProjection);
+    gl.viewport(0, 0, 32, 32);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, captureFBO);
+
+    const aPosition = gl.getAttribLocation(irradianceShader, 'aPosition');
+    captureViews.forEach((view, i) => {
+      gl.uniformMatrix4fv(uViewMatrix, false, view);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_CUBE_MAP_POSITIVE_X + i, irradianceMap, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+      renderCube(gl, aPosition);
+    });
+
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
 
   let prevFrame = 0;
   gl.viewport(0, 0, gl.canvas.clientWidth, gl.canvas.clientHeight);
@@ -234,6 +283,8 @@ const main = async () => {
         bindTexture(gl, uniformLocations.material.roughness, material.roughness);
         bindTexture(gl, uniformLocations.material.ao, material.ao);
 
+        bindCubeTexture(gl, uniformLocations.irradianceMap, irradianceMapId);
+
         gl.drawArrays(gl.TRIANGLES, 0, objectBuffers.vertexCount);
       });
     }
@@ -244,6 +295,8 @@ const main = async () => {
       gl.useProgram(program);
       gl.uniformMatrix4fv(uniformLocations.projectionMatrix, false, projectMatrix);
       gl.uniformMatrix4fv(uniformLocations.viewMatrix, false, viewMatrix);
+      bindCubeTexture(gl, uniformLocations.environmentMap, cubeMapId);
+      // bindCubeTexture(gl, uniformLocations.environmentMap, irradianceMapId);
 
       renderCube(gl, attribLocations.position);
     }

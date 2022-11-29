@@ -29,6 +29,8 @@ uniform Material uMaterial;
 #define NR_POINT_LIGHTS 4
 uniform PointLight uPointLights[NR_POINT_LIGHTS];
 
+uniform samplerCube uIrradianceMap;
+
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
 {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
@@ -112,7 +114,14 @@ void main()
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
 
-    vec3 ambient = vec3(0.03) * albedo * ao;
+    vec3 kS = fresnelSchlick(max(dot(N, V), 0.0), F0);
+    vec3 kD = 1.0 - kS;
+    kD *= 1.0 - metallic;
+
+    vec3 irradiance = textureCube(uIrradianceMap, N).rgb;
+    vec3 diffuse = irradiance * albedo;
+    vec3 ambient = kD * diffuse * ao;
+
     vec3 color = ambient + Lo;
 
     color /= color + vec3(1.0);

@@ -14,4 +14,5 @@ canvas {
     right: 0;
     margin: 4px 8px;
     color: white;
+    text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
 }

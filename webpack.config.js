@@ -21,26 +21,32 @@ module.exports = {
   },
   module: {
     rules: [
+      // css
       {
         test: /\.css$/i,
         use: ['style-loader', 'css-loader'],
       },
+      // images
       {
         test: /\.(png|svg|jpg|jpeg|gif|hdr)$/i,
         type: 'asset/resource',
       },
+      // fonts
       {
         test: /\.(woff|woff2|eot|ttf|otf)$/i,
         type: 'asset/resource',
       },
+      // shaders
       {
         test: /\.(frag|vert)$/i,
         use: ['raw-loader'],
       },
+      // 3d formats
       {
         test: /\.(obj)$/i,
         use: ['raw-loader'],
       },
+      // typescript
       {
         test: /\.tsx?$/,
         use: 'ts-loader',

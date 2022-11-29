@@ -13,7 +13,7 @@ import { orbitCamera } from '../cameras';
 
 const loadScene: SceneLoader<PBRMaterial> = async (gl) => {
   const objectBuffers = initObjectBuffers(gl, parseObj(sphereObj));
-  const red = createSolidColorTexture(gl, 128, 0, 0);
+  const red = createSolidColorTexture(gl, 0, 50, 128);
   const ao = createSolidWhiteTexture(gl);
   const normal = createFlatNormalTexture(gl);
 

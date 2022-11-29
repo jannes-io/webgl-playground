@@ -178,9 +178,11 @@ function parseHdrExt(buffer: Uint8Array) {
     g *= f;
     b *= f;
 
-    data[offset] = Math.round(r * 255);
-    data[offset + 1] = Math.round(g * 255);
-    data[offset + 2] = Math.round(b * 255);
+    const clamp = (v: number) => v > 255 ? 255 : v;
+
+    data[offset] = clamp(Math.round(r * 255));
+    data[offset + 1] = clamp(Math.round(g * 255));
+    data[offset + 2] = clamp(Math.round(b * 255));
     data[offset + 3] = 1.0;
   }
 

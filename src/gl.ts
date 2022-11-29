@@ -74,6 +74,12 @@ export const bindTexture = (gl: WebGLRenderingContext, bindLocation: WebGLUnifor
   gl.uniform1i(bindLocation, textureId);
 };
 
+export const bindCubeTexture = (gl: WebGLRenderingContext, bindLocation: WebGLUniformLocation, textureId: TextureID) => {
+  gl.activeTexture(gl.TEXTURE0 + textureId);
+  gl.bindTexture(gl.TEXTURE_CUBE_MAP, textureAtlas[textureId]);
+  gl.uniform1i(bindLocation, textureId);
+};
+
 export interface GLObjectBuffers {
   position: WebGLBuffer;
   normal: WebGLBuffer;
